@@ -1,4 +1,4 @@
-﻿
+
 jedi = new function () {
     var self = this;
 
@@ -17,6 +17,8 @@ jedi = new function () {
         else {
             module = arguments[1];
         }
+
+        delete initialisedModules[name];
 
         preInitialisedModules[name] = {
             module: module,
