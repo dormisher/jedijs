@@ -62,10 +62,16 @@ jedi = new function () {
     };
 
     function resetModulesWithDependency(dependencyName) {
-        for (var m in initialisedModules) {
-            if (preInitialisedModules[m].dependencies[dependencyName]) {
+        for (var m in initialisedModules)
+            if (doesModuleHaveDependency(dependencyName, preInitialisedModules[m]))
                 delete initialisedModules[m];
-            }
-        }
+    }
+
+    function doesModuleHaveDependency(dependencyName, module) {
+        for (var d in module.dependencies)
+            if (module.dependencies[d] == dependencyName)
+                return true;
+
+        return false;
     }
 };
