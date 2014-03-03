@@ -29,7 +29,7 @@ jedi = new function () {
 
     self.module = function (name) {
         if (mockModules[name]) {
-            return mockModules[name];
+            return mockModules[name].module;
         }
 
         if (!initialisedModules[name]) {
