@@ -4,6 +4,7 @@ jedi = new function () {
 
     var preInitialisedModules = {};
     var initialisedModules = {};
+    var mockModules = {};
 
     self.register = function () {
         var name = arguments[0];
@@ -27,6 +28,10 @@ jedi = new function () {
     };
 
     self.module = function (name) {
+        if (mockModules[name]) {
+            return mockModules[name];
+        }
+
         if (!initialisedModules[name]) {
             if (!preInitialisedModules[name]) {
                 throw 'could not find requested module "' + name + '"';
@@ -44,5 +49,16 @@ jedi = new function () {
         }
 
         return initialisedModules[name];
+    };
+
+    self.registerMock = function (name, module) {
+        mockModules[name] = {
+            module: module(),
+            lifetime: lifetime
+        };
+    };
+
+    self.deleteMock = function () {
+        delete mockModules[name];
     };
 };
