@@ -53,9 +53,19 @@ jedi = new function () {
 
     self.registerMock = function (name, module) {
         mockModules[name] = { module: module() };
+        resetModulesWithDependency(name);
     };
 
-    self.deleteMock = function () {
+    self.deleteMock = function (name) {
         delete mockModules[name];
+        resetModulesWithDependency(name);
     };
+
+    function resetModulesWithDependency(dependencyName) {
+        for (var m in initialisedModules) {
+            if (preInitialisedModules[m].dependencies[dependencyName]) {
+                delete initialisedModules[m];
+            }
+        }
+    }
 };
