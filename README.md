@@ -1,7 +1,7 @@
 # jediJS
 
 jediJS is a super-simple and lightweight javascript dependency injection framework. It is in fact so small
-that it is only 40 lines / 2k *UNZIPPED*!
+that it is only 65 lines / 2k *UNZIPPED*!
 
 It is extremely simple, all it provides is the ability to wrap your functions / classes as modules, and request other
 modules as injected dependencies. The first time a module is requested, the dependency chain is traversed and all required
@@ -64,3 +64,40 @@ Now we have registered a module we probably want to load it. Again this is dead 
 var SuperDuperMessageProvider = jedi.module('SuperDuperMessageProvider');
 alert(SuperDuperMessageProvider.whatAmI());
 ```
+
+### Temporary Mocking
+
+Often when testing your modules you will find yourself needing to temporarily mock it's dependencies. This is not possible using the `register` method. You can get jediJS to return a mock instead of the actual requested module by calling `jedi.registerMock`. Every subsequent request for the module you are mocking will return the mock instead of the real module. The original module is not overriten, it is simply ignore until you call `jedi.deleteMock` to clear your mocking module.
+
+Below is a typical example of injecting / deleting a mock in a test setup / tear down:
+
+```
+describe('SuperDuperMessageProvider', function () {
+	
+	var msgProvider;
+	beforeEach(function () {
+		// setup Messages mock to be passed to our SuperDuperMessageProvider
+		jedi.registerMock('Messages', function () {
+			return function () {
+				return 'This is a mocked message';
+			};
+		});
+
+		var SuperDuperMessageProvider = jedi.module('SuperDuperMessageProvider');
+		msgProvider = new SuperDuperMessageProvider();
+	});
+
+	afterEach(function () {
+		// clear the mock so as not to break any subsequent tests which may need to use the
+		// real Messages module
+		jedi.deleteMock('Messages');
+	});
+
+	it('should call getMessage on Messages module', function () {
+		var Messages = jedi.module('Messages');
+		expect(msgProvider.whatAmI()).toEqual('This is a mocked message');
+	});
+
+});
+```
+
