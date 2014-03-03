@@ -52,10 +52,7 @@ jedi = new function () {
     };
 
     self.registerMock = function (name, module) {
-        mockModules[name] = {
-            module: module(),
-            lifetime: lifetime
-        };
+        mockModules[name] = { module: module() };
     };
 
     self.deleteMock = function () {
