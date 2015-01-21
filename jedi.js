@@ -6,12 +6,26 @@ jedi = new function () {
     var initialisedModules = {};
     var mockModules = {};
 
+    var errorHandlingEnabled = false;
+    var onErrorCallback = function() {};
+
+    // options
+    self.setOptions = function (options) {
+        if (options.errorHandlingEnabled != null) {
+            errorHandlingEnabled = options.errorHandlingEnabled;
+        }
+        if (options.onErrorCallback != null) {
+            onErrorCallback = options.onErrorCallback;
+        }
+    };
+
+    // method to register a module
     self.register = function () {
         var name = arguments[0];
         var dependencies = [];
         var module;
 
-        if ({}.toString.call(arguments[1]) == '[object Array]') {
+        if (isArray(arguments[1])) {
             dependencies = arguments[1];
             module = arguments[2];
         }
@@ -27,6 +41,11 @@ jedi = new function () {
         };
     };
 
+    function isArray(obj) {
+        return ({}).toString.call(obj) === '[object Array]';
+    }
+
+    // method to retrieve a module
     self.module = function (name) {
         if (mockModules[name]) {
             return mockModules[name].module;
@@ -45,12 +64,73 @@ jedi = new function () {
             }
 
             var initialisedModule = preInitialisedModules[name].module.apply(self, args);
-            initialisedModules[name] = initialisedModule;
+
+            initialisedModules[name] = errorHandlingEnabled
+                ? applyErrorHandlers(name, initialisedModule)
+                : initialisedModule;
         }
 
         return initialisedModules[name];
     };
 
+    function applyErrorHandlers(moduleName, initialisedModule) {
+        if (isJson(initialisedModule)) {
+            applyHandlers(moduleName, initialisedModule);
+        }
+        else if (isFunction(initialisedModule)) {
+            applyHandlers(moduleName, initialisedModule.prototype);
+        }
+
+        return initialisedModule;
+    }
+
+    function applyHandlers(moduleName, object) {
+        var methodNames = Object.getOwnPropertyNames(object);
+        for (var i in methodNames) {
+            var method = methodNames[i];
+            var prop = object[method];
+
+            if (isFunction(prop) && !isJediModule(prop)) {
+                object[method] = errorHandlerWrapper(object[method], moduleName, method);
+            }
+        }
+    }
+    
+    function errorHandlerWrapper(fn, moduleName, methodName) {
+        return function () {
+            try {
+                return fn.apply(this, arguments);
+            }
+            catch (ex) {
+                var error = new Error(ex);
+                error.methodName = methodName;
+                error.moduleName = moduleName;
+
+                onErrorCallback(error);
+                console.error(error);
+            }
+        }
+    }
+
+    function isJson(obj) {
+        return ({}).toString.call(obj) === '[object Object]';
+    }
+
+    function isFunction(obj) {
+        return ({}).toString.call(obj) === '[object Function]';
+    }
+
+    function isJediModule(obj) {
+        for (var m in preInitialisedModules) {
+            if (initialisedModules[m] == obj) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // mocking methods
     self.registerMock = function (name, module) {
         mockModules[name] = { module: module() };
         resetModulesWithDependency(name);
@@ -69,7 +149,7 @@ jedi = new function () {
 
     function doesModuleHaveDependency(dependencyName, module) {
         for (var d in module.dependencies)
-            if (module.dependencies[d] == dependencyName)
+            if (module.dependencies[d] === dependencyName)
                 return true;
 
         return false;
